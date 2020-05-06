@@ -1,4 +1,5 @@
 import fastify, { FastifyError, FastifyReply, FastifyRequest, RegisterOptions } from "fastify";
+import { SocketStream } from "fastify-websocket"
 import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType } from 'graphql';
 import { IncomingMessage, Server, ServerResponse } from "http";
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
@@ -119,7 +120,8 @@ declare namespace fastifyGQL {
       verifyClient?: (
         info: object,
         next: (result: boolean) => void
-      ) => void
+      ) => void,
+      context?: (connection: SocketStream, request: FastifyRequest) => object | Promise<object>
     },
     /**
      * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
@@ -145,7 +147,8 @@ declare namespace fastifyGQL {
      * Custom additional properties of this error
      */
     extensions?: object
-  } 
+    additionalProperties?: object
+  }
 }
 
 declare module "fastify" {
