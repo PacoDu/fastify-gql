@@ -633,12 +633,9 @@ __fastify-gql__ supports the following options:
 * `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE (or Playground IDE) sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
-  * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
-<<<<<<< HEAD
+  * `subscription.verifyClient`: `Function` Result of function is passed to subscription resolvers as a custom GraphQL context. The function receives the `connection` and `request` as parameters.
   * `subscription.onConnect`: `Function` A function which can be used to validate the `connection_init` payload. If defined it should return a truthy value to authorize the connection. 
-=======
-  * `subscription.context`: A function that can be used to build a custom GraphQL context for subscriptions.
->>>>>>> docs: add new option to Readme
+  * `subscription.context`: `Function` A function that can be used to build a custom GraphQL context for subscriptions.
 * `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 * `gateway`: Object. Run the GraphQL server in gateway mode.
   * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
