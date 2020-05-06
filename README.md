@@ -136,7 +136,6 @@ In addition to the `persistedQueries` above, which let's client request for eith
 
 Note: `onlyPersisted` disables all IDEs (graphiql/playground) so typically you'd want to use it in production.
 
-
 ### Access app context in resolver
 
 ```js
@@ -241,6 +240,41 @@ app.register(GQL, {
   resolvers,
   subscription: true
 })
+```
+
+### Build a custom GraphQL context object for subscriptions
+
+```js
+...
+const resolvers = {
+  Mutation: {
+    sendMessage: async (_, { message, userId }, { pubsub }) => {
+      await pubsub.publish({
+        topic: userId,
+        payload: message
+      })
+
+      return "OK"
+    }
+  },
+  Subscription: {
+    receivedMessage: {
+      // If someone calls the sendMessage mutation with the Id of the user that was added
+      // to the subscription context, that user receives the message.
+      subscribe: (root, args, { pubsub, user }) => pubsub.subscribe(user.id)
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  subscription: {
+      // Add the decoded JWT from the Authorization header to the subscription context.
+      context: (_, req) => ({ user: jwt.verify(req.headers["Authorization"].slice(7))})
+  }
+})
+...
 ```
 
 ### Subscription support (with redis)
@@ -477,11 +511,13 @@ app.listen(3000)
 A GraphQL server can act as a Gateway that composes the schemas of the underlying services into one federated schema and executes queries across the services. Every underlying service must be a GraphQL server that supports the federation.
 
 In Gateway mode the following options are not allowed (the plugin will throw an error if any of them are defined):
+
 * `schema`
 * `resolvers`
 * `loaders`
 
 Also, using the following decorator methods will throw:
+
 * `app.graphql.defineResolvers`
 * `app.graphql.defineLoaders`
 * `app.graphql.replaceSchema`
@@ -598,7 +634,11 @@ __fastify-gql__ supports the following options:
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
+<<<<<<< HEAD
   * `subscription.onConnect`: `Function` A function which can be used to validate the `connection_init` payload. If defined it should return a truthy value to authorize the connection. 
+=======
+  * `subscription.context`: A function that can be used to build a custom GraphQL context for subscriptions.
+>>>>>>> docs: add new option to Readme
 * `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 * `gateway`: Object. Run the GraphQL server in gateway mode.
   * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
@@ -611,6 +651,7 @@ __fastify-gql__ supports the following options:
 * `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql).
 
 #### queryDepth example
+
 ```
 query {
   dogs {
@@ -630,6 +671,7 @@ query {
   }
 }
 ```
+
 A `queryDepth` of `6` would allow this query. `5` or less would throw with the error - `unnamedQuery query exceeds the query depth limit of 5`
 
 ### HTTP endpoints
@@ -668,6 +710,7 @@ payload must conform to the following JSON schema:
 ```
 
 For code from [example](#example) use:
+
 ```sh
 curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, y: 2) }"}' http://localhost:3000/graphql
 ```
@@ -678,6 +721,7 @@ Executes the GraphQL query or mutation described in the body. `operationName` an
 payload contains the GraphQL query.
 
 For code from [example](#example) use:
+
 ```sh
 curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }" http://localhost:3000/graphql
 ```
@@ -691,7 +735,6 @@ the options.
 
 Serves [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) if enabled by
 the options.
-
 
 ### decorators
 
@@ -859,6 +902,7 @@ run()
 ```
 
 <a name="defineLoaders"></a>
+
 #### app.graphql.defineLoaders(loaders)
 
 A loader is an utility to avoid the 1 + N query problem of GraphQL.
@@ -874,7 +918,6 @@ are the first two parameters of a normal resolver). The `context` is the
 GraphQL context, and it includes a `reply` object.
 
 Example:
-
 
 ```js
 const loaders = {
@@ -917,7 +960,6 @@ app.register(GQL, {
 
 Disabling caching has the advantage to avoid the serialization at
 the cost of more objects to fetch in the resolvers.
-
 
 Internally, it uses
 [single-user-cache](http://npm.im/single-user-cache).
