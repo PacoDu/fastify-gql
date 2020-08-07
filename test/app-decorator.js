@@ -1088,3 +1088,67 @@ test('Multiple errors in schema', async (t) => {
     t.equal(error.errors[1].name, 'GraphQLError')
   }
 })
+
+test('schema array', async (t) => {
+  const app = Fastify()
+  const schema = [
+    `type Query {
+        people: [Person]
+      }
+    `,
+    `type Person {
+      name: String
+      friends: [Person]
+    }`
+  ]
+
+  const resolvers = {
+    Person: {
+      friends: (root) => {
+        if (root.name === 'matteo') {
+          return [Promise.resolve({ name: 'marco' })]
+        }
+        if (root.name === 'marco') {
+          return [Promise.resolve({ name: 'matteo' })]
+        }
+        return []
+      }
+    },
+    Query: {
+      people: (root) => {
+        return [Promise.resolve({
+          name: 'matteo'
+        }), Promise.resolve({
+          name: 'marco'
+        })]
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = '{ people { name, friends { name } } }'
+  const res = await app.graphql(query)
+
+  t.deepEqual(res, {
+    data: {
+      people: [{
+        name: 'matteo',
+        friends: [{
+          name: 'marco'
+        }]
+      }, {
+        name: 'marco',
+        friends: [{
+          name: 'matteo'
+        }]
+      }]
+    }
+  })
+})

@@ -131,6 +131,23 @@ const plugin = fp(async function (app, opts) {
     } else {
       schema = buildSchema(schema)
     }
+  } else if (schema instanceof Array && schema.length > 0) {
+    const [s, ...typeDefs] = schema
+    if (opts.federationMetadata) {
+      schema = buildFederationSchema(s)
+    } else {
+      schema = buildSchema(s)
+    }
+
+    for (let typeDef of typeDefs) {
+      if (typeof typeDef === 'string') {
+        typeDef = parse(typeDef)
+      } else if (!typeDef || typeof typeDef !== 'object') {
+        throw new Error('Must provide valid Document AST')
+      }
+
+      schema = extendSchema(schema, typeDef)
+    }
   } else if (!opts.schema && !gateway) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
