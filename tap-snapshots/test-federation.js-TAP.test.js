@@ -18,18 +18,18 @@ directive @extends on OBJECT | INTERFACE
 
 directive @customdir on FIELD_DEFINITION
 
+type Query {
+  me: User
+  _service: _Service!
+  _entities(representations: [_Any!]!): [_Entity]!
+}
+
 scalar _Any
 
 scalar _FieldSet
 
 type _Service {
   sdl: String
-}
-
-type Query {
-  me: User
-  _entities(representations: [_Any!]!): [_Entity]!
-  _service: _Service!
 }
 
 type Product {
