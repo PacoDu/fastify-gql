@@ -283,6 +283,70 @@ test('GET route with mistyped variables', async (t) => {
   t.is(res.statusCode, 400)
 })
 
+test('GET route with extensions', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  const persistedQueryProvider = GQL.persistedQueryDefaults.automatic()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    persistedQueryProvider
+  })
+
+  const query = 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
+  const sha256Hash = persistedQueryProvider.getHashForQuery(query)
+  persistedQueryProvider.saveQuery(sha256Hash, query)
+
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?extensions=${JSON.stringify({ persistedQuery: { version: 1, sha256Hash } })}&variables=${JSON.stringify({ x: 2, y: 2 })}`
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
+
+test('GET route with bad JSON extensions', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  const persistedQueryProvider = GQL.persistedQueryDefaults.automatic()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    persistedQueryProvider
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?extensions=notajson'
+  })
+
+  t.is(res.statusCode, 400)
+})
+
 test('POST route variables', async (t) => {
   const app = Fastify()
   const schema = `
@@ -1727,6 +1791,79 @@ test('if ide is graphiql, serve config.js with the correct endpoint', async (t) 
   const res = await app.inject({
     method: 'GET',
     url: '/graphiql/config.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is graphiql with a prefix, serve config.js with the correct endpoint', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'graphiql',
+    path: '/app/graphql',
+    prefix: '/something',
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/something/graphiql/config.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.strictEqual(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\'')
+})
+
+test('if ide is graphiql with a prefix from a wrapping plugin, serve config.js with the correct endpoint', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  app.register(async (app) => {
+    app.register(GQL, {
+      ide: 'graphiql',
+      path: '/app/graphql',
+      schema
+    })
+  }, { prefix: '/something' })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/something/graphiql/config.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.strictEqual(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\'')
+})
+
+test('if ide is playground, and playgroundSettings is set, serve init.js with playground editor options ', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundSettings: {
+      'editor.theme': 'light',
+      'editor.fontSize': 17
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
   })
   t.strictEqual(res.statusCode, 200)
   t.strictEqual(res.headers['content-type'], 'application/javascript')

@@ -70,11 +70,22 @@ exports['test/routes.js TAP if ide is graphiql, serve config.js with the correct
 window.GRAPHQL_ENDPOINT = '/app/graphql'
 `
 
+exports['test/routes.js TAP if ide is playground, and playgroundSettings is set, serve init.js with playground editor options > must match snapshot 1'] = `
+window.addEventListener('load', function(event) {
+          GraphQLPlayground.init(document.getElementById('root'), {
+            subscriptionEndpoint: '/graphql',
+            endpoint: '/graphql',
+            settings: {"editor.theme":"light","editor.fontSize":17},
+          });
+        });
+`
+
 exports['test/routes.js TAP if ide is playground, serve init.js with the correct endpoint > must match snapshot 1'] = `
 window.addEventListener('load', function(event) {
           GraphQLPlayground.init(document.getElementById('root'), {
             subscriptionEndpoint: '/app/graphql',
             endpoint: '/app/graphql',
+            settings: undefined,
           });
         });
 `
@@ -84,7 +95,7 @@ exports['test/routes.js TAP mutation with GET errors > must match snapshot 1'] =
   "data": null,
   "errors": [
     {
-      "message": "Operation cannot be perfomed via a GET request"
+      "message": "Operation cannot be performed via a GET request"
     }
   ]
 }
