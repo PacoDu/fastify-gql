@@ -23,7 +23,7 @@ const {
 } = require('graphql')
 const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
-const buildFederationSchema = require('./lib/federation')
+const { buildFederationSchema, extendFederationSchema } = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
@@ -261,7 +261,11 @@ const plugin = fp(async function (app, opts) {
       throw new MER_ERR_INVALID_OPTS('Must provide valid Document AST')
     }
 
-    fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
+    if (opts.federationMetadata) {
+      fastifyGraphQl.schema = extendFederationSchema(fastifyGraphQl.schema, s)
+    } else {
+      fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
+    }
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {

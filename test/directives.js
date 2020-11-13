@@ -3,7 +3,13 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const mercurius = require('..')
-const { defaultFieldResolver, GraphQLScalarType, isNonNullType, isScalarType } = require('graphql')
+const {
+  defaultFieldResolver,
+  GraphQLScalarType,
+  isNonNullType,
+  isScalarType,
+  stripIgnoredCharacters
+} = require('graphql')
 const { makeExecutableSchema } = require('@graphql-tools/schema')
 const { mergeResolvers } = require('@graphql-tools/merge')
 const {
@@ -13,7 +19,7 @@ const {
   printSchemaWithDirectives,
   getResolversFromSchema
 } = require('@graphql-tools/utils')
-const buildFederationSchema = require('../lib/federation')
+const { buildFederationSchema } = require('../lib/federation')
 
 class ValidationError extends Error {
   constructor (message, extensions) {
@@ -461,7 +467,7 @@ test('federation support using schema from buildFederationSchema and custom dire
 
   let query = '{ _service { sdl } }'
   let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
+  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: stripIgnoredCharacters(schema) } } })
 
   query = 'query { foo }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })

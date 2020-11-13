@@ -1115,3 +1115,34 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
   // needed so that graphql is defined
   await app.ready()
 })
+
+test('calling extendSchema should work with federationMetadata enabled', async (t) => {
+  const service = Fastify()
+  t.tearDown(() => {
+    service.close()
+  })
+  service.register(GQL, {
+    schema: `
+      extend type Query {
+        me: User
+      }
+
+      type User @key(fields: "id") {
+        id: ID!
+        name: String!
+      }
+    `,
+    federationMetadata: true
+  })
+  await service.ready()
+
+  service.graphql.extendSchema(`
+    extend type Query {
+      field: String!
+    }
+  `)
+
+  const res = await service.inject({ method: 'POST', url: '/graphql', body: { query: '{ _service { sdl } }' } })
+  const body = JSON.parse(res.body)
+  t.deepEquals(body, { data: { _service: { sdl: 'type Query{me:User field:String!}type User{id:ID!name:String!}' } } })
+})
